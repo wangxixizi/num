@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生肖数字组合生成器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4ecf7 100%);
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #2c3e50;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 26px; margin-bottom: 6px; color: #1a2a4a; }
+  .subtitle { text-align: center; color: #7a8aa0; font-size: 14px; margin-bottom: 20px; }
+
+  .color-legend {
+    display: flex; justify-content: center; gap: 18px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5a6a85; }
+  .legend-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 600;
+  }
+  .dot-red { background: #d93025; }
+  .dot-blue { background: #1a56db; }
+  .dot-green { background: #188038; }
+
+  .toolbar { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* 豆包风格输入框 */
+  .chat-input-wrap {
+    max-width: 880px; margin: 0 auto 14px;
+  }
+  .chat-input-box {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 14px 16px 10px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+  }
+  .chat-input-box:focus-within {
+    border-color: #3b6cf6;
+    box-shadow: 0 0 0 3px rgba(59,108,246,0.1), 0 2px 14px rgba(0,0,0,0.05);
+  }
+  .chat-input-box textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.65;
+    min-height: 26px;
+    max-height: 220px;
+    background: transparent;
+    color: #2c3e50;
+    overflow-y: auto;
+  }
+  .chat-input-box textarea::placeholder {
+    color: #b5bfd0;
+  }
+  .chat-input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f3f8;
+    gap: 10px;
+  }
+  .chat-input-footer .left-tools {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-input-footer select {
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    background: #f7f9fc;
+    cursor: pointer;
+    color: #5a6a85;
+  }
+  .chat-input-footer select:focus { outline: none; border-color: #3b6cf6; }
+  .chat-hint {
+    font-size: 11px; color: #b5bfd0;
+  }
+  .send-btn {
+    background: #3b6cf6;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .send-btn:hover { background: #2a5ae0; }
+  .send-btn:active { transform: scale(0.96); }
+  .send-btn svg { width: 14px; height: 14px; }
+  .input-hint {
+    text-align: center; font-size: 12px; color: #a0b0c8; margin-bottom: 16px;
+  }
+
+  /* 解析预览区 */
+  .parse-preview {
+    max-width: 900px; margin: 0 auto 20px;
+    background: #fff; border: 1px solid #e0e8f8; border-radius: 12px;
+    padding: 16px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .preview-stats {
+    display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 14px;
+    padding-bottom: 12px; border-bottom: 1px solid #eef2f8;
+  }
+  .preview-stats .stat {
+    font-size: 13px; color: #5a6a85; display: flex; align-items: center; gap: 4px;
+  }
+  .preview-stats .stat strong { color: #3b6cf6; font-size: 17px; }
+  .preview-stats .stat.warn strong { color: #e67e22; }
+  .preview-section { margin-bottom: 12px; }
+  .preview-section:last-child { margin-bottom: 0; }
+  .preview-label {
+    font-size: 12px; font-weight: 600; color: #7a8aa0; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .preview-text {
+    background: #f7f9ff; border: 1px solid #e4ebfa; border-radius: 8px;
+    padding: 10px 12px; font-size: 14px; font-family: "SF Mono", Consolas, monospace;
+    color: #2c3e50; line-height: 1.6; word-break: break-all;
+    max-height: 120px; overflow-y: auto;
+  }
+  .preview-text.dup { color: #e67e22; }
+  .dup-tag {
+    display: inline-block; background: #fff3e0; color: #e67e22;
+    padding: 2px 8px; border-radius: 6px; font-size: 12px; margin-right: 6px;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+
+  /* JSON 字段选择面板 */
+  .field-select-panel {
+    max-width: 880px; margin: 0 auto 16px;
+    background: #fff; border: 1px solid #e0e8f8; border-radius: 14px;
+    padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  }
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+  }
+  .panel-title { font-size: 14px; font-weight: 600; color: #1a2a4a; }
+  .panel-title .json-badge {
+    background: #188038; color: #fff; font-size: 11px;
+    padding: 2px 8px; border-radius: 6px; margin-left: 8px; font-weight: 500;
+  }
+  .panel-actions { display: flex; gap: 6px; }
+  .field-list {
+    max-height: 300px; overflow-y: auto;
+    border: 1px solid #eef2f8; border-radius: 10px; padding: 6px;
+    background: #fafbfd;
+  }
+  .field-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .field-item:hover { background: #eef3ff; }
+  .field-item.checked { background: #eef3ff; }
+  .field-item input[type="checkbox"] {
+    margin-top: 3px; cursor: pointer; width: 16px; height: 16px;
+    accent-color: #3b6cf6; flex-shrink: 0;
+  }
+  .field-info { flex: 1; min-width: 0; }
+  .field-path {
+    font-size: 13px; font-weight: 500; color: #2a3a5a;
+    font-family: "SF Mono", Consolas, monospace; margin-bottom: 3px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .field-type-badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 4px;
+    background: #eef3ff; color: #3b6cf6; font-weight: 500;
+  }
+  .field-type-badge.arr { background: #f0faf0; color: #188038; }
+  .field-type-badge.str { background: #fff8e6; color: #d48806; }
+  .field-type-badge.num { background: #f0f0ff; color: #531dab; }
+  .field-value {
+    font-size: 12px; color: #8a9ab5;
+    font-family: "SF Mono", Consolas, monospace;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .panel-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid #eef2f8;
+    font-size: 13px; color: #5a6a85; flex-wrap: wrap; gap: 8px;
+  }
+  .panel-footer strong { color: #3b6cf6; }
+  .panel-footer .footer-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 9px 20px; border: none; border-radius: 8px; font-size: 14px;
+    cursor: pointer; transition: all 0.2s; font-weight: 500;
+  }
+  .btn-primary { background: #3b6cf6; color: #fff; }
+  .btn-primary:hover { background: #2a5ae0; }
+  .btn-secondary { background: #fff; color: #3b6cf6; border: 1px solid #c5d4f0; }
+  .btn-secondary:hover { background: #eef3fd; }
+  .btn-danger { background: #fff; color: #e74c3c; border: 1px solid #f5c6c0; }
+  .btn-danger:hover { background: #fdf0ef; }
+  .btn-small { padding: 5px 12px; font-size: 12px; }
+
+  .zodiac-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .zodiac-card {
+    background: #fff; border-radius: 12px; padding: 14px;
+    border: 2px solid #e4ecf7; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .zodiac-card:hover { border-color: #a8c0f0; }
+  .zodiac-card.checked {
+    border-color: #3b6cf6; background: linear-gradient(135deg, #eef3ff 0%, #e0ebff 100%);
+  }
+  .zodiac-card.checked::after {
+    content: "✓"; position: absolute; top: 8px; right: 10px;
+    width: 22px; height: 22px; background: #3b6cf6; color: #fff;
+    border-radius: 50%; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; font-weight: bold;
+  }
+  .zodiac-card.partial {
+    border-color: #f0a020; background: linear-gradient(135deg, #fffaf0 0%, #fff3e0 100%);
+  }
+  .zodiac-card.partial::after {
+    content: "−"; position: absolute; top: 8px; right: 10px;
+    width: 22px; height: 22px; background: #f0a020; color: #fff;
+    border-radius: 50%; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; font-weight: bold; line-height: 1;
+  }
+  .zodiac-name {
+    font-size: 18px; font-weight: 600; margin-bottom: 10px; color: #1a2a4a;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .zodiac-count { font-size: 12px; color: #8a9ab5; font-weight: normal; }
+  .zodiac-nums { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .num-ball {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-family: "SF Mono", Consolas, monospace;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+    user-select: none; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: 2px solid transparent;
+  }
+  .num-ball:hover { transform: scale(1.12); }
+  .num-ball.selected {
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #3b6cf6, 0 2px 6px rgba(59,108,246,0.4);
+    transform: scale(1.05);
+  }
+  .num-ball.selected:hover { transform: scale(1.15); }
+  .num-ball.unselected { filter: grayscale(0.7); opacity: 0.4; }
+  .num-ball.disabled {
+    opacity: 0.2; cursor: not-allowed; pointer-events: none;
+  }
+  .ball-red { background: radial-gradient(circle at 35% 30%, #ff6b6b, #d93025); }
+  .ball-blue { background: radial-gradient(circle at 35% 30%, #5b9bff, #1a56db); }
+  .ball-green { background: radial-gradient(circle at 35% 30%, #4ecb71, #188038); }
+
+  .stats-bar {
+    background: #fff; border-radius: 10px; padding: 14px 20px; margin-bottom: 16px;
+    display: flex; gap: 24px; flex-wrap: wrap; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .stat-item { font-size: 14px; color: #5a6a85; display: flex; align-items: center; gap: 4px; }
+  .stat-item strong { color: #3b6cf6; font-size: 18px; }
+  .stat-color { display: inline-flex; align-items: center; gap: 4px; }
+
+  .result-panel {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05); min-height: 200px;
+  }
+  .result-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .result-title { font-size: 16px; font-weight: 600; color: #1a2a4a; }
+  .result-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* 位置筛选区 - 三列数字球 */
+  .filter-panel {
+    background: #f5f8ff; border: 1px solid #e0e8f8; border-radius: 10px;
+    padding: 16px; margin-bottom: 16px;
+  }
+  .filter-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+  }
+  .filter-title { font-size: 14px; font-weight: 600; color: #3b4a6a; }
+  .filter-title .hint { font-weight: normal; color: #8a9ab5; font-size: 12px; margin-left: 8px; }
+
+  .position-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .position-row { grid-template-columns: 1fr; }
+  }
+  .position-col {
+    background: #fff; border-radius: 10px; padding: 12px;
+    border: 1px solid #e4ecf7;
+  }
+  .position-col.active { border-color: #3b6cf6; box-shadow: 0 0 0 2px rgba(59,108,246,0.12); }
+  .position-col.locked { opacity: 0.5; }
+  .position-head {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+  }
+  .position-label {
+    font-size: 13px; font-weight: 600; color: #2a3a5a;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .position-label .pos-badge {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #3b6cf6; color: #fff; font-size: 11px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .position-count { font-size: 11px; color: #8a9ab5; }
+  .position-nums {
+    display: flex; flex-wrap: wrap; gap: 5px; min-height: 34px;
+  }
+  .position-nums .num-ball { width: 28px; height: 28px; font-size: 12px; }
+  .position-empty { font-size: 12px; color: #b0bccc; padding: 4px 0; }
+
+  .combo-list {
+    display: flex; flex-direction: column; gap: 8px;
+    max-height: 520px; overflow-y: auto; padding: 6px;
+  }
+  .combo-item {
+    background: #f7f9ff; border: 1px solid #e4ebfa; border-radius: 10px;
+    padding: 8px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .combo-idx {
+    color: #a0b0c8; font-size: 13px; font-family: "SF Mono", Consolas, monospace;
+    min-width: 42px; flex-shrink: 0;
+  }
+  .combo-nums { display: flex; gap: 10px; flex-wrap: wrap; }
+  .num-with-zodiac {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .num-with-zodiac .num-ball { width: 32px; height: 32px; font-size: 13px; cursor: default; }
+  .num-with-zodiac .num-ball:hover { transform: none; }
+  .zodiac-label { font-size: 11px; color: #7a8aa0; font-weight: 500; }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: #a0b0c8; }
+  .empty-state .icon { font-size: 44px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  .pagination {
+    display: flex; justify-content: center; align-items: center; gap: 10px;
+    margin-top: 16px; flex-wrap: wrap;
+  }
+  .pagination button {
+    padding: 6px 14px; border: 1px solid #c5d4f0; background: #fff;
+    border-radius: 6px; cursor: pointer; font-size: 13px; color: #3b6cf6;
+  }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagination .page-info { font-size: 13px; color: #7a8aa0; }
+
+  .tip { text-align: center; font-size: 12px; color: #a0b0c8; margin-top: 16px; line-height: 1.8; }
+  .tip b { color: #5a6a85; font-weight: 600; }
+
+  /* 输出选择弹窗 */
+  .modal-mask {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-mask.show { display: flex; }
+  .sel-modal {
+    background: #fff; border-radius: 14px; padding: 24px;
+    width: 100%; max-width: 640px; max-height: 85vh; overflow-y: auto;
+  }
+  .sel-modal h3 {
+    font-size: 18px; color: #1a2a4a; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sel-modal .modal-sub { font-size: 13px; color: #8a9ab5; margin-bottom: 18px; }
+  .sel-section { margin-bottom: 18px; }
+  .sel-section-title {
+    font-size: 14px; font-weight: 600; color: #3b4a6a; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sel-section-title .badge {
+    background: #eef3ff; color: #3b6cf6; padding: 2px 8px;
+    border-radius: 10px; font-size: 12px; font-weight: 500;
+  }
+  .sel-nums-grid {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    background: #f7f9ff; border: 1px solid #e4ebfa;
+    border-radius: 10px; padding: 14px;
+  }
+  .sel-num-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .sel-num-item .num-ball { width: 30px; height: 30px; font-size: 12px; cursor: default; }
+  .sel-num-item .num-ball:hover { transform: none; }
+  .sel-num-item .zodiac-label { font-size: 10px; color: #8a9ab5; }
+  .text-row {
+    display: flex; gap: 8px; align-items: stretch;
+  }
+  .text-row textarea {
+    flex: 1; padding: 10px 12px; border: 1px solid #d0daea;
+    border-radius: 8px; font-size: 14px; font-family: "SF Mono", Consolas, monospace;
+    resize: none; min-height: 60px; color: #2c3e50; background: #fafbfd;
+  }
+  .text-row textarea:focus { outline: none; border-color: #3b6cf6; }
+  .modal-btns {
+    display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;
+  }
+  .copy-toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: #188038; color: #fff; padding: 10px 24px; border-radius: 8px;
+    font-size: 14px; z-index: 300; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .copy-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>生肖数字组合生成器</h1>
+  <p class="subtitle">2026年生肖灵码表 · 勾选生肖或数字 · 按位置多选递进筛选 · 组合按选择顺序重排</p>
+
+  <div class="color-legend">
+    <div class="legend-item"><span class="legend-dot dot-red">红</span>红波</div>
+    <div class="legend-item"><span class="legend-dot dot-blue">蓝</span>蓝波</div>
+    <div class="legend-item"><span class="legend-dot dot-green">绿</span>绿波</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+    <button class="btn btn-secondary" onclick="invertAll()">反选</button>
+    <button class="btn btn-danger" onclick="clearAll()">清空</button>
+    <button class="btn btn-secondary" onclick="showSelection()">输出选择</button>
+    <button class="btn btn-primary" onclick="generateCombos()">生成组合</button>
+  </div>
+
+  <div class="chat-input-wrap">
+    <div class="chat-input-box">
+      <textarea id="batchInput" rows="1" placeholder="粘贴数字批量勾选，任何非数字字符自动分隔，支持 1-5 范围展开…"></textarea>
+      <div class="chat-input-footer">
+        <div class="left-tools">
+          <select id="inputMode" title="选择模式">
+            <option value="replace">替换</option>
+            <option value="append">追加</option>
+          </select>
+          <span class="chat-hint">Ctrl + 回车 解析</span>
+        </div>
+        <button class="send-btn" onclick="applyBatchInput()" title="解析勾选（Ctrl+回车）">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          解析勾选
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="input-hint">支持多行粘贴 · 逗号/空格/顿号/文字/符号等任意非数字字符自动分隔 · 1-5 自动展开</div>
+
+  <!-- JSON 字段选择面板 -->
+  <div class="field-select-panel" id="fieldSelectPanel" style="display:none;">
+    <div class="panel-header">
+      <div class="panel-title">
+        检测到 JSON，选择要提取的字段（可多选）
+        <span class="json-badge">JSON</span>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-small btn-secondary" onclick="toggleAllFields(true)">全选</button>
+        <button class="btn btn-small btn-secondary" onclick="toggleAllFields(false)">全不选</button>
+      </div>
+    </div>
+    <div class="field-list" id="fieldList"></div>
+    <div class="panel-footer">
+      <span>已选 <strong id="selectedFieldCount">0</strong> / <span id="totalFieldCount">0</span> 个字段</span>
+      <div class="footer-actions">
+        <button class="btn btn-secondary" onclick="cancelFieldSelection()">取消</button>
+        <button class="btn btn-primary" onclick="confirmFieldSelection()">确认解析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 解析预览区 -->
+  <div class="parse-preview" id="parsePreview" style="display:none;">
+    <div class="preview-stats">
+      <div class="stat">原始数字总数：<strong id="rawCount">0</strong></div>
+      <div class="stat">去重后个数：<strong id="uniqueCount">0</strong></div>
+      <div class="stat warn" id="dupStat" style="display:none;">重复数字：<strong id="dupCount">0</strong> 个</div>
+      <div class="stat" id="jsonStat" style="display:none;">
+        <strong style="color:#188038;">JSON</strong> 格式已识别
+      </div>
+      <div class="stat" id="zodiacStat" style="display:none;">
+        生肖字段：<strong id="zodiacFields" style="color:#3b6cf6;"></strong>
+      </div>
+    </div>
+    <div class="preview-section" id="jsonSection" style="display:none;">
+      <div class="preview-label">JSON 数字来源（字段路径）</div>
+      <div class="preview-text" id="previewSources" style="max-height:100px;"></div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-label">原始数据（统一逗号分隔）</div>
+      <div class="preview-text" id="previewRaw"></div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-label">从小到大排序（去重）</div>
+      <div class="preview-text" id="previewSorted"></div>
+    </div>
+    <div class="preview-section" id="dupSection" style="display:none;">
+      <div class="preview-label">重复数据（数字 × 出现次数）</div>
+      <div class="preview-text dup" id="previewDup"></div>
+    </div>
+  </div>
+
+  <div class="zodiac-grid" id="zodiacGrid"></div>
+
+  <div class="stats-bar" id="statsBar" style="display:none;">
+    <div class="stat-item">已选数字：<strong id="statNums">0</strong> 个</div>
+    <div class="stat-item">涉及生肖：<strong id="statZodiac">0</strong> 个</div>
+    <div class="stat-item stat-color"><span class="legend-dot dot-red">红</span><strong id="statRed">0</strong></div>
+    <div class="stat-item stat-color"><span class="legend-dot dot-blue">蓝</span><strong id="statBlue">0</strong></div>
+    <div class="stat-item stat-color"><span class="legend-dot dot-green">绿</span><strong id="statGreen">0</strong></div>
+    <div class="stat-item">全部组合：<strong id="statCombos">0</strong> 组</div>
+    <div class="stat-item">筛选后：<strong id="statFiltered">0</strong> 组</div>
+  </div>
+
+  <div class="result-panel">
+    <div class="result-header">
+      <div class="result-title" id="resultTitle">组合结果</div>
+      <div class="result-actions" id="resultActions" style="display:none;">
+        <button class="btn btn-secondary" onclick="copyAll()">复制全部</button>
+        <button class="btn btn-secondary" onclick="downloadTxt()">下载 TXT</button>
+      </div>
+    </div>
+
+    <!-- 位置递进筛选区 - 三列数字球，每列可多选 -->
+    <div class="filter-panel" id="filterPanel" style="display:none;">
+      <div class="filter-header">
+        <div class="filter-title">
+          按位置筛选（可多选，同位置互斥）
+          <span class="hint">每列可多选数字，但同一组合里每列最多只含一个选中数字；列与列之间需同时满足；组合按选择位置顺序重排</span>
+        </div>
+        <button class="btn btn-small btn-secondary" onclick="clearPositions()">清除筛选</button>
+      </div>
+      <div class="position-row">
+        <div class="position-col active" id="posCol0">
+          <div class="position-head">
+            <div class="position-label"><span class="pos-badge">1</span>第1位</div>
+            <div class="position-count" id="posCount0">已选 0</div>
+          </div>
+          <div class="position-nums" id="posNums0"></div>
+        </div>
+        <div class="position-col locked" id="posCol1">
+          <div class="position-head">
+            <div class="position-label"><span class="pos-badge">2</span>第2位</div>
+            <div class="position-count" id="posCount1">请先选第1位</div>
+          </div>
+          <div class="position-nums" id="posNums1"><div class="position-empty">请先在第1位选择数字</div></div>
+        </div>
+        <div class="position-col locked" id="posCol2">
+          <div class="position-head">
+            <div class="position-label"><span class="pos-badge">3</span>第3位</div>
+            <div class="position-count" id="posCount2">请先选第2位</div>
+          </div>
+          <div class="position-nums" id="posNums2"><div class="position-empty">请先在第2位选择数字</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="combo-list" id="comboList">
+      <div class="empty-state">
+        <div class="icon">🎲</div>
+        <p>勾选生肖或数字后点击「生成组合」查看结果</p>
+      </div>
+    </div>
+    <div class="pagination" id="pagination" style="display:none;">
+      <button onclick="prevPage()" id="prevBtn">上一页</button>
+      <span class="page-info" id="pageInfo">第 1 页</span>
+      <button onclick="nextPage()" id="nextBtn">下一页</button>
+    </div>
+  </div>
+
+  <p class="tip">
+    <b>点击生肖卡片</b>：全选/全不选该生肖　·　<b>点击单个数字球</b>：单独勾选/取消<br>
+    生成组合后，在上方三列中点击数字球筛选：每列可多选但同列数字互斥（一个组合里每列最多出现一个），第1位选了→第2位解锁，依此类推<br>
+    组合内数字按你在各列选择的顺序重排显示（组合本身不考虑顺序，去重不受影响）
+  </p>
+</div>
+
+<!-- 输出选择弹窗 -->
+<div class="modal-mask" id="selModal">
+  <div class="sel-modal">
+    <h3>当前选择 <span class="badge" id="selTotalBadge">0 个数字</span></h3>
+    <div class="modal-sub" id="selSub">按从小到大排序</div>
+
+    <div class="sel-section">
+      <div class="sel-section-title">数字详情（带生肖）</div>
+      <div class="sel-nums-grid" id="selNumsGrid"></div>
+    </div>
+
+    <div class="sel-section">
+      <div class="sel-section-title">纯数字（逗号分隔）</div>
+      <div class="text-row">
+        <textarea id="selTextArea" readonly></textarea>
+        <button class="btn btn-primary" style="white-space:nowrap;" onclick="copySelText()">复制</button>
+      </div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeSelModal()">关闭</button>
+    </div>
+  </div>
+</div>
+<div class="copy-toast" id="copyToast">已复制到剪贴板</div>
+
+<script>
+// ========== 2026年生肖灵码表（固定） ==========
+const ZODIAC_ORDER = ["马","蛇","龙","兔","虎","牛","鼠","猪","狗","鸡","猴","羊"];
+const ZODIAC_DATA = {
+  "马": [1, 13, 25, 37, 49],
+  "蛇": [2, 14, 26, 38],
+  "龙": [3, 15, 27, 39],
+  "兔": [4, 16, 28, 40],
+  "虎": [5, 17, 29, 41],
+  "牛": [6, 18, 30, 42],
+  "鼠": [7, 19, 31, 43],
+  "猪": [8, 20, 32, 44],
+  "狗": [9, 21, 33, 45],
+  "鸡": [10, 22, 34, 46],
+  "猴": [11, 23, 35, 47],
+  "羊": [12, 24, 36, 48]
+};
+
+const RED_NUMS = new Set([1,2,7,8,12,13,18,19,23,24,29,30,34,35,40,45,46]);
+const BLUE_NUMS = new Set([3,4,9,10,14,15,20,25,26,31,36,37,41,42,47,48]);
+const GREEN_NUMS = new Set([5,6,11,16,17,21,22,27,28,32,33,38,39,43,44,49]);
+
+function getColor(n) {
+  if (RED_NUMS.has(n)) return "red";
+  if (BLUE_NUMS.has(n)) return "blue";
+  if (GREEN_NUMS.has(n)) return "green";
+  return "gray";
+}
+function getZodiacOfNum(num) {
+  for (const name of ZODIAC_ORDER) {
+    if (ZODIAC_DATA[name].includes(num)) return name;
+  }
+  return "";
+}
+
+// 状态
+let selectedNums = new Set();
+let selectionOrder = [];
+let allCombos = [];
+let filteredCombos = [];
+// 三个位置的筛选数字，每个位置是数组（按选择顺序）
+let positionFilters = [[], [], []];
+let currentPage = 1;
+const PAGE_SIZE = 150;
+
+// JSON 字段选择状态
+let currentJSONObject = null;
+let jsonFields = [];
+let selectedFieldPaths = new Set();
+
+function getOrderedNums() {
+  return selectionOrder.filter(n => selectedNums.has(n));
+}
+
+function getCardState(name) {
+  const nums = ZODIAC_DATA[name];
+  const sel = nums.filter(n => selectedNums.has(n)).length;
+  if (sel === 0) return "none";
+  if (sel === nums.length) return "all";
+  return "partial";
+}
+
+function renderGrid() {
+  const grid = document.getElementById("zodiacGrid");
+  grid.innerHTML = "";
+  ZODIAC_ORDER.forEach(name => {
+    const nums = ZODIAC_DATA[name];
+    const state = getCardState(name);
+    const card = document.createElement("div");
+    card.className = "zodiac-card" + (state==="all"?" checked":state==="partial"?" partial":"");
+    card.onclick = (e) => { if (!e.target.classList.contains("num-ball")) toggleZodiac(name); };
+    const selCount = nums.filter(n => selectedNums.has(n)).length;
+    const orderedNums = nums.slice().sort((a,b) => {
+      const ia = selectionOrder.indexOf(a), ib = selectionOrder.indexOf(b);
+      if (ia === -1 && ib === -1) return a - b;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    const numsHtml = orderedNums.map(n => {
+      const isSel = selectedNums.has(n);
+      return `<span class="num-ball ball-${getColor(n)} ${isSel?'selected':'unselected'}"
+        onclick="event.stopPropagation();toggleNum(${n})" title="${name} · ${String(n).padStart(2,'0')}">${String(n).padStart(2,'0')}</span>`;
+    }).join("");
+    card.innerHTML = `<div class="zodiac-name">${name}<span class="zodiac-count">${selCount}/${nums.length}</span></div><div class="zodiac-nums">${numsHtml}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function toggleNum(n) {
+  if (selectedNums.has(n)) selectedNums.delete(n);
+  else { selectedNums.add(n); if (!selectionOrder.includes(n)) selectionOrder.push(n); }
+  renderGrid();
+}
+function toggleZodiac(name) {
+  const nums = ZODIAC_DATA[name];
+  const state = getCardState(name);
+  if (state === "all") nums.forEach(n => selectedNums.delete(n));
+  else nums.forEach(n => { selectedNums.add(n); if (!selectionOrder.includes(n)) selectionOrder.push(n); });
+  renderGrid();
+}
+function selectAll() {
+  ZODIAC_ORDER.forEach(name => ZODIAC_DATA[name].forEach(n => {
+    selectedNums.add(n); if (!selectionOrder.includes(n)) selectionOrder.push(n);
+  }));
+  renderGrid();
+}
+function invertAll() {
+  ZODIAC_ORDER.forEach(name => ZODIAC_DATA[name].forEach(n => {
+    if (selectedNums.has(n)) selectedNums.delete(n);
+    else { selectedNums.add(n); if (!selectionOrder.includes(n)) selectionOrder.push(n); }
+  }));
+  renderGrid();
+}
+function clearAll() { selectedNums.clear(); selectionOrder = []; renderGrid(); clearResult(); }
+
+// ========== 批量输入解析（支持 JSON + 任意非数字分隔符） ==========
+
+// ========== JSON 字段收集与选择 ==========
+
+// 从字符串中提取数字和范围
+function extractNumsFromString(str, path, nums, sources) {
+  // 范围
+  const rangeRegex = /(\d{1,2})\s*[-~～到至]\s*(\d{1,2})/g;
+  let m;
+  while ((m = rangeRegex.exec(str)) !== null) {
+    let s = parseInt(m[1]), e = parseInt(m[2]);
+    if (s > e) [s, e] = [e, s];
+    for (let n = s; n <= e; n++) {
+      if (n >= 1 && n <= 49) { nums.push(n); sources.push(path); }
+    }
+  }
+  // 单独数字
+  const singleRegex = /\d{1,2}/g;
+  let sm;
+  while ((sm = singleRegex.exec(str)) !== null) {
+    const n = parseInt(sm[0]);
+    if (n >= 1 && n <= 49) { nums.push(n); sources.push(path); }
+  }
+}
+
+// 从对象中递归收集包含数字的子字段路径
+function collectSubFields(obj, baseSubPath) {
+  const subFields = [];
+  function traverse(val, path) {
+    if (typeof val === 'number') {
+      if (Number.isInteger(val) && val >= 1 && val <= 49) {
+        subFields.push({ path, type: 'number' });
+      }
+    } else if (typeof val === 'string') {
+      if (/\d/.test(val)) {
+        subFields.push({ path, type: 'string' });
+      }
+    } else if (Array.isArray(val)) {
+      const hasNum = val.some(v =>
+        (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 49) ||
+        (typeof v === 'string' && /\d/.test(v))
+      );
+      if (hasNum) subFields.push({ path, type: 'array' });
+      val.forEach((item, i) => {
+        if (item !== null && typeof item === 'object') traverse(item, path + `[${i}]`);
+      });
+    } else if (val !== null && typeof val === 'object') {
+      Object.entries(val).forEach(([key, v]) => {
+        traverse(v, path ? `${path}.${key}` : key);
+      });
+    }
+  }
+  traverse(obj, baseSubPath || '');
+  return subFields;
+}
+
+// 按路径从对象中取值
+function getValueByPath(obj, path) {
+  if (!path || path === '根') return obj;
+  if (path.startsWith('根.')) path = path.slice(2);
+  const parts = path.split(/\.|\[(\d+)\]/).filter(Boolean);
+  let current = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined) return undefined;
+    const idx = parseInt(part);
+    if (!isNaN(idx) && Array.isArray(current)) {
+      current = current[idx];
+    } else {
+      current = current[part];
+    }
+  }
+  return current;
+}
+
+// 递归收集 JSON 中包含数字的可选字段
+function collectJSONFields(obj) {
+  const fields = [];
+  function traverse(val, path) {
+    const p = path || '根';
+    if (typeof val === 'number') {
+      if (Number.isInteger(val) && val >= 1 && val <= 49) {
+        fields.push({ path: p, value: val, type: 'number' });
+      }
+    } else if (typeof val === 'string') {
+      if (/\d/.test(val)) {
+        fields.push({ path: p, value: val, type: 'string' });
+      }
+    } else if (Array.isArray(val)) {
+      // 检查数组是否直接包含数字/数字字符串
+      const hasDirectNum = val.some(v =>
+        (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 49) ||
+        (typeof v === 'string' && /\d/.test(v))
+      );
+      if (hasDirectNum) {
+        fields.push({ path: p, value: val, type: 'array' });
+      }
+      // 对象数组：只生成通配字段 path[*].subfield，不递归具体元素
+      const objects = val.filter(item => item !== null && typeof item === 'object' && !Array.isArray(item));
+      if (objects.length > 0) {
+        const subFieldMap = {};
+        objects.forEach(item => {
+          const subs = collectSubFields(item, '');
+          subs.forEach(s => {
+            if (!subFieldMap[s.path]) subFieldMap[s.path] = { type: s.type, count: 0 };
+            subFieldMap[s.path].count++;
+          });
+        });
+        Object.entries(subFieldMap).forEach(([subPath, info]) => {
+          const wildcardPath = `${p}[*].${subPath}`;
+          if (!fields.some(f => f.path === wildcardPath)) {
+            fields.push({
+              path: wildcardPath,
+              value: `通配：${objects.length} 个元素的 .${subPath}`,
+              type: info.type,
+              wildcard: true,
+              wildcardBase: p,
+              wildcardSub: subPath,
+              wildcardCount: objects.length
+            });
+          }
+        });
+      }
+      // 非对象数组不递归具体元素，避免生成 path[0]、path[1] 等具体字段
+    } else if (val !== null && typeof val === 'object') {
+      Object.entries(val).forEach(([key, v]) => {
+        traverse(v, p + '.' + key);
+      });
+    }
+  }
+  traverse(obj, '');
+  return fields;
+}
+
+// 渲染字段选择列表
+function renderFieldList() {
+  const list = document.getElementById("fieldList");
+  document.getElementById("totalFieldCount").textContent = jsonFields.length;
+  document.getElementById("selectedFieldCount").textContent = selectedFieldPaths.size;
+
+  if (jsonFields.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#a0b0c8;font-size:13px;">未在 JSON 中找到 1-49 范围内的数字字段</div>';
+    return;
+  }
+
+  list.innerHTML = jsonFields.map(f => {
+    const checked = selectedFieldPaths.has(f.path) ? 'checked' : '';
+    const itemClass = selectedFieldPaths.has(f.path) ? 'field-item checked' : 'field-item';
+    const typeClass = f.type === 'array' ? 'arr' : f.type === 'string' ? 'str' : 'num';
+    const typeLabel = f.type === 'array' ? '数组' : f.type === 'string' ? '字符串' : '数字';
+    const wildcardBadge = f.wildcard ? `<span class="field-type-badge" style="background:#f0e6ff;color:#722ed1;">通配 ×${f.wildcardCount}</span>` : '';
+    let valPreview;
+    if (f.wildcard) {
+      valPreview = `自动遍历 ${f.wildcardBase}[0..${f.wildcardCount-1}].${f.wildcardSub}`;
+    } else if (f.type === 'array') valPreview = JSON.stringify(f.value);
+    else if (f.type === 'string') valPreview = `"${f.value}"`;
+    else valPreview = String(f.value);
+    if (valPreview.length > 90) valPreview = valPreview.slice(0, 90) + '...';
+    const safePath = f.path.replace(/'/g, "\\'");
+    return `<div class="${itemClass}" onclick="toggleField('${safePath}')">
+      <input type="checkbox" ${checked} onclick="event.stopPropagation();toggleField('${safePath}')">
+      <div class="field-info">
+        <div class="field-path">${f.path}${wildcardBadge}<span class="field-type-badge ${typeClass}">${typeLabel}</span></div>
+        <div class="field-value">${valPreview}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleField(path) {
+  if (selectedFieldPaths.has(path)) selectedFieldPaths.delete(path);
+  else selectedFieldPaths.add(path);
+  renderFieldList();
+}
+
+function toggleAllFields(select) {
+  if (select) jsonFields.forEach(f => selectedFieldPaths.add(f.path));
+  else selectedFieldPaths.clear();
+  renderFieldList();
+}
+
+function cancelFieldSelection() {
+  document.getElementById("fieldSelectPanel").style.display = "none";
+  currentJSONObject = null;
+  jsonFields = [];
+  selectedFieldPaths.clear();
+}
+
+// 从选中的字段中提取数字
+function extractFromSelectedFields(obj, selectedPaths) {
+  const nums = [];
+  const sources = [];
+
+  // 先处理通配字段 path[*].subfield
+  jsonFields.filter(f => f.wildcard && selectedPaths.has(f.path)).forEach(f => {
+    const arr = getValueByPath(obj, f.wildcardBase);
+    if (Array.isArray(arr)) {
+      arr.forEach((item, i) => {
+        const val = getValueByPath(item, f.wildcardSub);
+        const srcPath = `${f.wildcardBase}[${i}].${f.wildcardSub}`;
+        if (typeof val === 'number') {
+          if (Number.isInteger(val) && val >= 1 && val <= 49) {
+            nums.push(val); sources.push(srcPath);
+          }
+        } else if (typeof val === 'string') {
+          extractNumsFromString(val, srcPath, nums, sources);
+        } else if (Array.isArray(val)) {
+          val.forEach(item => {
+            if (typeof item === 'number' && Number.isInteger(item) && item >= 1 && item <= 49) {
+              nums.push(item); sources.push(srcPath);
+            } else if (typeof item === 'string') {
+              extractNumsFromString(item, srcPath, nums, sources);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  // 处理普通字段
+  function traverse(val, path) {
+    const p = path || '根';
+    if (selectedPaths.has(p)) {
+      if (typeof val === 'number') {
+        if (Number.isInteger(val) && val >= 1 && val <= 49) {
+          nums.push(val); sources.push(p);
+        }
+      } else if (typeof val === 'string') {
+        extractNumsFromString(val, p, nums, sources);
+      } else if (Array.isArray(val)) {
+        val.forEach(item => {
+          if (typeof item === 'number') {
+            if (Number.isInteger(item) && item >= 1 && item <= 49) {
+              nums.push(item); sources.push(p);
+            }
+          } else if (typeof item === 'string') {
+            extractNumsFromString(item, p, nums, sources);
+          }
+        });
+      }
+      return; // 选中的字段不再递归子节点
+    }
+    // 未选中，继续递归所有子节点
+    if (Array.isArray(val)) {
+      val.forEach((item, i) => {
+        if (item === null || item === undefined) return;
+        traverse(item, p + `[${i}]`);
+      });
+    } else if (val !== null && typeof val === 'object') {
+      Object.entries(val).forEach(([key, v]) => {
+        traverse(v, p + '.' + key);
+      });
+    }
+  }
+  traverse(obj, '');
+  return { nums, sources };
+}
+
+function confirmFieldSelection() {
+  if (selectedFieldPaths.size === 0) {
+    alert("请至少选择一个字段");
+    return;
+  }
+  const result = extractFromSelectedFields(currentJSONObject, selectedFieldPaths);
+  if (result.nums.length === 0) {
+    alert("选中的字段中没有找到 1-49 范围内的有效数字");
+    return;
+  }
+
+  // 构建解析结果
+  const countMap = {};
+  result.nums.forEach(n => countMap[n] = (countMap[n] || 0) + 1);
+  const dups = Object.entries(countMap)
+    .filter(([n, c]) => c > 1)
+    .map(([n, c]) => ({ num: parseInt(n), count: c }))
+    .sort((a, b) => a.num - b.num);
+  const unique = [...new Set(result.nums)].sort((a, b) => a - b);
+
+  const zodiacFields = jsonFields
+    .filter(f => selectedFieldPaths.has(f.path))
+    .map(f => f.path.split('.').pop())
+    .filter(p => ZODIAC_ORDER.includes(p));
+
+  const parseResult = {
+    raw: result.nums,
+    unique,
+    dups,
+    countMap,
+    isJSON: true,
+    sources: result.sources,
+    zodiacFields: [...new Set(zodiacFields)]
+  };
+
+  document.getElementById("fieldSelectPanel").style.display = "none";
+
+  // 展示预览并执行勾选
+  showParsePreview(parseResult);
+  applySelection(parseResult);
+
+  currentJSONObject = null;
+  jsonFields = [];
+  selectedFieldPaths.clear();
+}
+
+// 尝试解析 JSON
+function tryParseJSON(text) {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (e) {
+    return null;
+  }
+}
+
+// 递归从 JSON 中提取所有 1-49 的数字
+function extractNumbersFromJSON(obj) {
+  const nums = [];       // 提取出的数字（含重复，按遍历顺序）
+  const sources = [];    // 每个数字的来源路径
+  const zodiacFields = []; // 识别到的生肖字段名
+
+  function traverse(val, path) {
+    if (typeof val === 'number') {
+      if (Number.isInteger(val) && val >= 1 && val <= 49) {
+        nums.push(val);
+        sources.push(path || '根');
+      }
+    } else if (typeof val === 'string') {
+      // 字符串中提取数字（支持 "01,06,12" 或 "1-5" 等）
+      // 先处理范围
+      const rangeRegex = /(\d{1,2})\s*[-~～到至]\s*(\d{1,2})/g;
+      let m;
+      let processed = val;
+      while ((m = rangeRegex.exec(val)) !== null) {
+        let s = parseInt(m[1]), e = parseInt(m[2]);
+        if (s > e) [s, e] = [e, s];
+        for (let n = s; n <= e; n++) {
+          if (n >= 1 && n <= 49) {
+            nums.push(n);
+            sources.push(path + '(字符串范围)');
+          }
+        }
+      }
+      // 再提取单独数字
+      const singleRegex = /\d{1,2}/g;
+      let sm;
+      while ((sm = singleRegex.exec(val)) !== null) {
+        const n = parseInt(sm[0]);
+        if (n >= 1 && n <= 49) {
+          nums.push(n);
+          sources.push(path + '(字符串)');
+        }
+      }
+    } else if (Array.isArray(val)) {
+      val.forEach((item, i) => traverse(item, path + `[${i}]`));
+    } else if (val !== null && typeof val === 'object') {
+      // 检查 key 是否是生肖名
+      Object.entries(val).forEach(([key, v]) => {
+        if (ZODIAC_ORDER.includes(key)) {
+          zodiacFields.push(key);
+        }
+        traverse(v, path ? `${path}.${key}` : key);
+      });
+    }
+  }
+
+  traverse(obj, '');
+  return { nums, sources, zodiacFields };
+}
+
+function parseInputDetailed(text) {
+  // 先尝试 JSON 解析
+  const jsonObj = tryParseJSON(text);
+  let rawNums = [];
+  let sources = [];
+  let zodiacFields = [];
+  let isJSON = false;
+
+  if (jsonObj !== null) {
+    isJSON = true;
+    const result = extractNumbersFromJSON(jsonObj);
+    rawNums = result.nums;
+    sources = result.sources;
+    zodiacFields = result.zodiacFields;
+  } else {
+    // 非 JSON：用正则匹配数字和范围
+    const regex = /(\d{1,2})\s*[-~～到至]\s*(\d{1,2})|(\d{1,2})/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match[1] !== undefined) {
+        let start = parseInt(match[1]);
+        let end = parseInt(match[2]);
+        if (start > end) [start, end] = [end, start];
+        for (let n = start; n <= end; n++) {
+          if (n >= 1 && n <= 49) rawNums.push(n);
+        }
+      } else {
+        const n = parseInt(match[3]);
+        if (n >= 1 && n <= 49) rawNums.push(n);
+      }
+    }
+  }
+
+  // 统计重复
+  const countMap = {};
+  rawNums.forEach(n => countMap[n] = (countMap[n] || 0) + 1);
+  const dups = Object.entries(countMap)
+    .filter(([n, c]) => c > 1)
+    .map(([n, c]) => ({ num: parseInt(n), count: c }))
+    .sort((a, b) => a.num - b.num);
+  const unique = [...new Set(rawNums)].sort((a, b) => a - b);
+
+  return { raw: rawNums, unique, dups, countMap, isJSON, sources, zodiacFields };
+}
+
+// 兼容旧调用：只返回去重排序后的数字
+function parseInputNumbers(text) {
+  return parseInputDetailed(text).unique;
+}
+
+// 展示解析预览
+function showParsePreview(result) {
+  const preview = document.getElementById("parsePreview");
+  preview.style.display = "block";
+  document.getElementById("rawCount").textContent = result.raw.length;
+  document.getElementById("uniqueCount").textContent = result.unique.length;
+
+  // JSON 格式标识
+  const jsonStat = document.getElementById("jsonStat");
+  const jsonSection = document.getElementById("jsonSection");
+  if (result.isJSON) {
+    jsonStat.style.display = "flex";
+    jsonSection.style.display = "block";
+    const sourceMap = {};
+    result.sources.forEach((src, i) => {
+      if (!sourceMap[src]) sourceMap[src] = [];
+      sourceMap[src].push(String(result.raw[i]).padStart(2, '0'));
+    });
+    const sourceLines = Object.entries(sourceMap).map(([src, nums]) =>
+      `${src} → ${nums.join(",")}`
+    );
+    document.getElementById("previewSources").textContent = sourceLines.join("\n");
+  } else {
+    jsonStat.style.display = "none";
+    jsonSection.style.display = "none";
+  }
+
+  // 生肖字段识别
+  const zodiacStat = document.getElementById("zodiacStat");
+  if (result.zodiacFields && result.zodiacFields.length > 0) {
+    zodiacStat.style.display = "flex";
+    document.getElementById("zodiacFields").textContent = result.zodiacFields.join("、");
+  } else {
+    zodiacStat.style.display = "none";
+  }
+
+  // 原始数据
+  document.getElementById("previewRaw").textContent =
+    result.raw.map(n => String(n).padStart(2, '0')).join(",");
+
+  // 从小到大排序
+  document.getElementById("previewSorted").textContent =
+    result.unique.map(n => String(n).padStart(2, '0')).join(",");
+
+  // 重复数据
+  const dupSection = document.getElementById("dupSection");
+  const dupStat = document.getElementById("dupStat");
+  if (result.dups.length > 0) {
+    dupSection.style.display = "block";
+    dupStat.style.display = "flex";
+    document.getElementById("dupCount").textContent = result.dups.length;
+    document.getElementById("previewDup").innerHTML =
+      result.dups.map(d =>
+        `<span class="dup-tag">${String(d.num).padStart(2,'0')} × ${d.count}</span>`
+      ).join("");
+  } else {
+    dupSection.style.display = "none";
+    dupStat.style.display = "none";
+  }
+}
+
+// 执行勾选
+function applySelection(result) {
+  const mode = document.getElementById("inputMode").value;
+  if (mode === "replace") {
+    selectedNums.clear();
+    selectionOrder = [];
+  }
+  result.unique.forEach(n => {
+    selectedNums.add(n);
+    if (!selectionOrder.includes(n)) selectionOrder.push(n);
+  });
+  renderGrid();
+  const jsonTag = result.isJSON ? "（JSON 字段解析）" : "";
+  const dupTag = result.dups.length > 0 ? "（自动去重，忽略 " + result.dups.length + " 个重复）" : "";
+  showToast("已勾选 " + result.unique.length + " 个数字" + jsonTag + dupTag);
+}
+
+function applyBatchInput() {
+  const text = document.getElementById("batchInput").value.trim();
+  if (!text) { alert("请输入数字字符串"); return; }
+
+  // 先尝试 JSON 解析
+  const jsonObj = tryParseJSON(text);
+  if (jsonObj !== null) {
+    // 收集字段，展示字段选择面板
+    currentJSONObject = jsonObj;
+    jsonFields = collectJSONFields(jsonObj);
+    selectedFieldPaths = new Set();
+    // 默认全选
+    jsonFields.forEach(f => selectedFieldPaths.add(f.path));
+
+    if (jsonFields.length === 0) {
+      alert("JSON 中未找到 1-49 范围内的数字字段");
+      return;
+    }
+
+    document.getElementById("parsePreview").style.display = "none";
+    document.getElementById("fieldSelectPanel").style.display = "block";
+    renderFieldList();
+    return;
+  }
+
+  // 非 JSON：直接解析
+  const result = parseInputDetailed(text);
+  if (result.unique.length === 0) {
+    alert("未能解析出有效数字（需在 1-49 范围内）\n任何非数字字符自动作为分隔符，支持 1-5 范围展开");
+    return;
+  }
+  document.getElementById("fieldSelectPanel").style.display = "none";
+  showParsePreview(result);
+  applySelection(result);
+}
+
+// Ctrl+回车 或 Cmd+回车 快捷解析 + textarea 自适应高度
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("batchInput");
+  if (input) {
+    // 自适应高度
+    const autoResize = () => {
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 220) + "px";
+    };
+    input.addEventListener("input", autoResize);
+    // 初始化一次
+    autoResize();
+
+    // 快捷键
+    input.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        applyBatchInput();
+      }
+    });
+  }
+});
+
+// ========== 输出选择 ==========
+function showSelection() {
+  if (selectedNums.size === 0) { alert("请先勾选数字"); return; }
+  const nums = [...selectedNums].sort((a, b) => a - b);
+  const zSet = new Set();
+  nums.forEach(n => zSet.add(getZodiacOfNum(n)));
+
+  document.getElementById("selTotalBadge").textContent = nums.length + " 个数字 · " + zSet.size + " 个生肖";
+
+  // 数字详情（带生肖）
+  const grid = document.getElementById("selNumsGrid");
+  grid.innerHTML = nums.map(n => {
+    return `<div class="sel-num-item">
+      <span class="num-ball ball-${getColor(n)} selected">${String(n).padStart(2,'0')}</span>
+      <span class="zodiac-label">${getZodiacOfNum(n)}</span>
+    </div>`;
+  }).join("");
+
+  // 纯数字逗号分隔
+  const csv = nums.map(n => String(n).padStart(2, '0')).join(",");
+  document.getElementById("selTextArea").value = csv;
+
+  document.getElementById("selModal").classList.add("show");
+}
+
+function copySelText() {
+  const text = document.getElementById("selTextArea").value;
+  navigator.clipboard.writeText(text).then(() => showToast())
+    .catch(() => {
+      const ta = document.getElementById("selTextArea");
+      ta.select(); document.execCommand("copy");
+      showToast();
+    });
+}
+
+function closeSelModal() {
+  document.getElementById("selModal").classList.remove("show");
+}
+
+function showToast(msg) {
+  const t = document.getElementById("copyToast");
+  t.textContent = msg || "已复制到剪贴板";
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+// 点击遮罩关闭弹窗
+document.addEventListener("click", (e) => {
+  if (e.target.id === "selModal") closeSelModal();
+});
+
+// ========== 生成组合 ==========
+function generateCombos() {
+  if (selectedNums.size === 0) { alert("请至少勾选一个数字"); return; }
+  if (selectedNums.size < 3) { alert("至少需要勾选 3 个数字，当前只有 " + selectedNums.size + " 个"); return; }
+
+  const nums = getOrderedNums();
+  allCombos = [];
+  for (let i = 0; i < nums.length - 2; i++)
+    for (let j = i + 1; j < nums.length - 1; j++)
+      for (let k = j + 1; k < nums.length; k++)
+        allCombos.push([nums[i], nums[j], nums[k]]);
+
+  let red=0, blue=0, green=0;
+  const zSet = new Set();
+  nums.forEach(n => {
+    const c = getColor(n);
+    if(c==="red")red++; else if(c==="blue")blue++; else if(c==="green")green++;
+    zSet.add(getZodiacOfNum(n));
+  });
+  document.getElementById("statsBar").style.display = "flex";
+  document.getElementById("statNums").textContent = nums.length;
+  document.getElementById("statZodiac").textContent = zSet.size;
+  document.getElementById("statRed").textContent = red;
+  document.getElementById("statBlue").textContent = blue;
+  document.getElementById("statGreen").textContent = green;
+  document.getElementById("statCombos").textContent = allCombos.length.toLocaleString();
+
+  // 重置位置筛选
+  positionFilters = [[], [], []];
+  renderPositionFilters();
+  applyPositionFilter();
+}
+
+// ========== 位置递进筛选（每列可多选） ==========
+
+// 判断组合是否满足前面所有位置的筛选条件（每位置多选数字互斥，组合中最多含一个）
+function comboSatisfiesPrev(combo, pos) {
+  for (let i = 0; i < pos; i++) {
+    const selected = positionFilters[i];
+    if (selected.length > 0) {
+      // 组合与该位置选中数字的交集必须恰好为1（至少一个且不能多个）
+      const intersection = selected.filter(x => combo.includes(x));
+      if (intersection.length !== 1) return false;
+    }
+  }
+  return true;
+}
+
+// 获取指定位置可选的数字列表
+function getAvailableNums(pos) {
+  const allNums = getOrderedNums();
+  // 前面位置已选的所有数字
+  const prevSelected = [];
+  for (let i = 0; i < pos; i++) prevSelected.push(...positionFilters[i]);
+  const prevSet = new Set(prevSelected);
+
+  // 排除前面已选的
+  let available = allNums.filter(n => !prevSet.has(n));
+
+  // 如果前面有筛选条件，只保留能共存的数字
+  if (pos > 0 && prevSelected.length > 0) {
+    available = available.filter(n => {
+      return allCombos.some(combo => {
+        if (!combo.includes(n)) return false;
+        return comboSatisfiesPrev(combo, pos);
+      });
+    });
+  }
+  return available;
+}
+
+function renderPositionFilters() {
+  document.getElementById("filterPanel").style.display = "block";
+  for (let pos = 0; pos < 3; pos++) {
+    const col = document.getElementById("posCol" + pos);
+    const numsContainer = document.getElementById("posNums" + pos);
+    const countEl = document.getElementById("posCount" + pos);
+
+    // 前面位置是否有选择（第0位总是可用）
+    const prevHasSelection = pos === 0 || positionFilters.slice(0, pos).some(arr => arr.length > 0);
+
+    if (!prevHasSelection) {
+      col.classList.remove("active");
+      col.classList.add("locked");
+      countEl.textContent = pos === 0 ? "已选 0" : "请先选第" + pos + "位";
+      numsContainer.innerHTML = `<div class="position-empty">请先在第${pos}位选择数字</div>`;
+      continue;
+    }
+
+    col.classList.remove("locked");
+    if (positionFilters[pos].length > 0) col.classList.add("active");
+    else col.classList.remove("active");
+
+    countEl.textContent = positionFilters[pos].length === 0
+      ? "不限制"
+      : "已选 " + positionFilters[pos].length;
+
+    const available = getAvailableNums(pos);
+    const availableSet = new Set(available);
+
+    if (available.length === 0) {
+      numsContainer.innerHTML = `<div class="position-empty">无可选数字</div>`;
+      continue;
+    }
+
+    numsContainer.innerHTML = available.map(n => {
+      const isSel = positionFilters[pos].includes(n);
+      return `<span class="num-ball ball-${getColor(n)} ${isSel?'selected':'unselected'}"
+        onclick="togglePositionNum(${pos},${n})"
+        title="${String(n).padStart(2,'0')} · ${getZodiacOfNum(n)}">${String(n).padStart(2,'0')}</span>`;
+    }).join("");
+  }
+}
+
+function togglePositionNum(pos, n) {
+  const arr = positionFilters[pos];
+  const idx = arr.indexOf(n);
+  if (idx >= 0) arr.splice(idx, 1);
+  else arr.push(n);
+
+  // 清空后面位置的选择（可选数字变了）
+  for (let i = pos + 1; i < 3; i++) positionFilters[i] = [];
+
+  renderPositionFilters();
+  applyPositionFilter();
+}
+
+function clearPositions() {
+  positionFilters = [[], [], []];
+  renderPositionFilters();
+  applyPositionFilter();
+}
+
+function applyPositionFilter() {
+  filteredCombos = allCombos.filter(combo => {
+    for (let pos = 0; pos < 3; pos++) {
+      const selected = positionFilters[pos];
+      if (selected.length > 0) {
+        // 每位置多选数字互斥：组合与该位置选中数字的交集必须恰好为1
+        const intersection = selected.filter(x => combo.includes(x));
+        if (intersection.length !== 1) return false;
+      }
+    }
+    return true;
+  });
+  document.getElementById("statFiltered").textContent = filteredCombos.length.toLocaleString();
+  currentPage = 1;
+  renderResult();
+}
+
+// 按位置选择顺序重排组合内数字
+function reorderCombo(combo) {
+  const result = [];
+  const used = new Set();
+  // 按位置顺序，每个位置内按选择顺序
+  for (let pos = 0; pos < 3; pos++) {
+    for (const n of positionFilters[pos]) {
+      if (combo.includes(n) && !used.has(n)) {
+        result.push(n);
+        used.add(n);
+      }
+    }
+  }
+  // 剩余数字按原顺序追加
+  for (const n of combo) {
+    if (!used.has(n)) result.push(n);
+  }
+  return result;
+}
+
+// ========== 渲染结果 ==========
+function renderResult() {
+  const list = document.getElementById("comboList");
+  const total = filteredCombos.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  if (allCombos.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">🎲</div><p>勾选生肖或数字后点击「生成组合」查看结果</p></div>`;
+    document.getElementById("pagination").style.display = "none";
+    document.getElementById("resultActions").style.display = "none";
+    document.getElementById("resultTitle").textContent = "组合结果";
+    return;
+  }
+
+  document.getElementById("resultActions").style.display = "flex";
+  const totalSelected = positionFilters.reduce((sum, arr) => sum + arr.length, 0);
+  document.getElementById("resultTitle").textContent = totalSelected > 0
+    ? `筛选结果（${total.toLocaleString()} / ${allCombos.length.toLocaleString()} 组）`
+    : `组合结果（共 ${total.toLocaleString()} 组）`;
+
+  if (total === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>没有符合条件的组合，请调整筛选数字</p></div>`;
+    document.getElementById("pagination").style.display = "none";
+    return;
+  }
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, total);
+  let html = "";
+  for (let idx = start; idx < end; idx++) {
+    const original = filteredCombos[idx];
+    const c = reorderCombo(original);
+    const numsHtml = c.map(n => {
+      const z = getZodiacOfNum(n);
+      return `<div class="num-with-zodiac">
+        <span class="num-ball ball-${getColor(n)} selected">${String(n).padStart(2,'0')}</span>
+        <span class="zodiac-label">${z}</span></div>`;
+    }).join("");
+    html += `<div class="combo-item"><span class="combo-idx">#${idx+1}</span><div class="combo-nums">${numsHtml}</div></div>`;
+  }
+  list.innerHTML = html;
+
+  if (totalPages > 1) {
+    document.getElementById("pagination").style.display = "flex";
+    document.getElementById("pageInfo").textContent = `第 ${currentPage} / ${totalPages} 页（每页 ${PAGE_SIZE} 组）`;
+    document.getElementById("prevBtn").disabled = currentPage === 1;
+    document.getElementById("nextBtn").disabled = currentPage === totalPages;
+  } else {
+    document.getElementById("pagination").style.display = "none";
+  }
+  list.scrollTop = 0;
+}
+
+function prevPage() { if (currentPage > 1) { currentPage--; renderResult(); } }
+function nextPage() { currentPage++; renderResult(); }
+
+function clearResult() {
+  allCombos = [];
+  filteredCombos = [];
+  positionFilters = [[], [], []];
+  document.getElementById("statsBar").style.display = "none";
+  document.getElementById("filterPanel").style.display = "none";
+  renderResult();
+}
+
+function formatComboText(c) {
+  const reordered = reorderCombo(c);
+  return reordered.map(n => `${String(n).padStart(2,'0')}(${getZodiacOfNum(n)})`).join(" ");
+}
+function copyAll() {
+  const text = filteredCombos.map((c, i) => `${i+1}. ${formatComboText(c)}`).join("\n");
+  navigator.clipboard.writeText(text).then(() => alert("已复制 " + filteredCombos.length + " 组到剪贴板"))
+    .catch(() => {
+      const ta = document.createElement("textarea"); ta.value = text;
+      document.body.appendChild(ta); ta.select(); document.execCommand("copy");
+      document.body.removeChild(ta); alert("已复制 " + filteredCombos.length + " 组到剪贴板");
+    });
+}
+function downloadTxt() {
+  const header = "生肖数字组合结果\n生成时间：" + new Date().toLocaleString() + "\n共 " + filteredCombos.length + " 组\n\n";
+  const text = header + filteredCombos.map((c, i) => `${i+1}. ${formatComboText(c)}`).join("\n");
+  const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url;
+  a.download = `生肖组合_${filteredCombos.length}组.txt`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+renderGrid();
+</script>
+</body>
+</html>
